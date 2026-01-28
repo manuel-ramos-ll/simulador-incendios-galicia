@@ -1,0 +1,24 @@
+# Entorno virtual
+venv/
+env/
+.env
+
+# Archivos compilados de Python
+__pycache__/
+*.py[cod]
+
+# Datos Geoespaciales (No subir mapas pesados)
+*.tif
+*.TIF
+*.asc
+*.shp
+*.shx
+*.dbf
+*.zip
+*.json
+*.geojson
+
+# Archivos de sistema y IDE
+.DS_Store
+.vscode/
+.idea/
