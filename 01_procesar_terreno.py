@@ -1,82 +1,98 @@
 import rasterio
 import numpy as np
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 def calcular_pendiente_orientacion(dem, cell_size):
-    """
-    Calcula pendiente (grados) y orientación (grados) a partir de una matriz de elevación.
-    Usamos el método de gradiente de NumPy.
-    """
-    # dy, dx son los gradientes (cambio de altura por celda)
+    """Calcula pendiente y orientación"""
     dy, dx = np.gradient(dem, cell_size)
-
-    # Cálculo de la pendiente (Slope)
-    # Pitágoras: la hipotenusa del cambio en x e y
+    
     slope_rad = np.arctan(np.sqrt(dx**2 + dy**2))
     slope_deg = np.degrees(slope_rad)
-
-    # Cálculo de la orientación (Aspect)
-    # 0=Norte, 90=Este, 180=Sur, 270=Oeste
-    aspect_rad = np.arctan2(-dx, dy) # Signos ajustados para convención geográfica
-    aspect_deg = np.degrees(aspect_rad)
     
-    # Convertir a 0-360 grados (el arctan2 devuelve -180 a 180)
-    aspect_deg = (aspect_deg + 360) % 360
+    aspect_rad = np.arctan2(-dx, dy)
+    aspect_deg = (np.degrees(aspect_rad) + 360) % 360
 
     return slope_deg, aspect_deg
 
 # --- CONFIGURACIÓN ---
-# CAMBIA ESTO por el nombre de tu archivo descargado del IGN
 ARCHIVO_MDT = "terreno.tif" 
 
 try:
     print(f"Abriendo {ARCHIVO_MDT}...")
     with rasterio.open(ARCHIVO_MDT) as src:
-        # 1. Leer la matriz de elevación (banda 1)
         elevacion = src.read(1)
+        # Manejo de valores nulos (importante para que no salgan picos raros)
+        elevacion = np.where(elevacion == src.nodata, np.nan, elevacion)
         
-        # Leer metadatos importantes
-        profile = src.profile
         transform = src.transform
-        cell_size = transform[0] # Tamaño del píxel en metros (ej. 5m o 25m)
+        cell_size = transform[0]
         
-        # Manejar valores nulos (NoData) si existen
-        if src.nodata is not None:
-            elevacion = np.ma.masked_equal(elevacion, src.nodata)
-
-    print(f"Dimensiones del mapa: {elevacion.shape}")
-    print(f"Resolución de celda: {cell_size} metros")
-
-    # 2. Calcular variables físicas
-    print("Calculando pendientes y orientaciones...")
+    print("Calculando variables del terreno...")
     pendiente, orientacion = calcular_pendiente_orientacion(elevacion, cell_size)
 
-    # 3. Visualización
-    print("Generando gráficos...")
-    fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    # --- VISUALIZACIÓN ---
+    print("Generando gráficos (esto puede tardar unos segundos)...")
+    
+    # Creamos una figura con 4 huecos (2 filas x 2 columnas)
+    fig = plt.figure(figsize=(16, 10))
 
-    # Mapa de Elevación
-    im1 = axes[0].imshow(elevacion, cmap='terrain')
-    axes[0].set_title("Elevación (m)")
-    plt.colorbar(im1, ax=axes[0], fraction=0.046, pad=0.04)
+    # 1. Mapa de Elevación (2D)
+    ax1 = fig.add_subplot(2, 2, 1)
+    im1 = ax1.imshow(elevacion, cmap='terrain')
+    ax1.set_title("Elevación (m)")
+    plt.colorbar(im1, ax=ax1)
 
-    # Mapa de Pendiente
-    im2 = axes[1].imshow(pendiente, cmap='magma') # Magma es bueno para intensidad
-    axes[1].set_title("Pendiente (Grados)")
-    plt.colorbar(im2, ax=axes[1], fraction=0.046, pad=0.04)
+    # 2. Mapa de Pendiente (2D)
+    ax2 = fig.add_subplot(2, 2, 2)
+    im2 = ax2.imshow(pendiente, cmap='magma')
+    ax2.set_title("Pendiente (Grados) - Clave para velocidad")
+    plt.colorbar(im2, ax=ax2)
 
-    # Mapa de Orientación
-    im3 = axes[2].imshow(orientacion, cmap='hsv') # HSV es cíclico (bueno para ángulos)
-    axes[2].set_title("Orientación (Grados)")
-    plt.colorbar(im3, ax=axes[2], fraction=0.046, pad=0.04)
+    # 3. Mapa de Orientación (2D)
+    ax3 = fig.add_subplot(2, 2, 3)
+    im3 = ax3.imshow(orientacion, cmap='hsv')
+    ax3.set_title("Orientación (Grados)")
+    plt.colorbar(im3, ax=ax3)
+
+    # 4. VISUALIZACIÓN 3D
+    print("Renderizando modelo 3D...")
+    ax4 = fig.add_subplot(2, 2, 4, projection='3d')
+
+    # Crear malla de coordenadas X, Y
+    rows, cols = elevacion.shape
+    x = np.arange(0, cols)
+    y = np.arange(0, rows)
+    X, Y = np.meshgrid(x, y)
+
+    # FACTOR DE "DIEZMADO" (Downsampling)
+    # Si stride = 1, pinta todos los píxeles (muy lento).
+    # Si stride = 10, pinta 1 de cada 10 píxeles (rápido).
+    stride = 5 
+    
+    # Pintamos la superficie
+    surf = ax4.plot_surface(
+        X[::stride, ::stride], 
+        Y[::stride, ::stride], 
+        elevacion[::stride, ::stride], 
+        cmap='terrain', 
+        linewidth=0, 
+        antialiased=False
+    )
+    
+    # Ajustes del gráfico 3D
+    ax4.set_title("Relieve 3D")
+    ax4.set_zlabel('Altitud (m)')
+    
+    # Cambiar el ángulo de vista inicial (Elevación, Azimut)
+    ax4.view_init(elev=45, azim=135) 
+    
+    # Añadir barra de color
+    fig.colorbar(surf, ax=ax4, shrink=0.5, aspect=10)
 
     plt.tight_layout()
     plt.show()
-    
-    print("¡Éxito! Tienes las matrices base para el simulador.")
+    print("Hecho.")
 
-except FileNotFoundError:
-    print(f"ERROR: No encuentro el archivo '{ARCHIVO_MDT}'.")
-    print("Por favor, descarga un MDT del CNIG y ponlo en esta carpeta.")
 except Exception as e:
-    print(f"Ocurrió un error inesperado: {e}")
+    print(f"Error: {e}")
