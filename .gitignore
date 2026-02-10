@@ -1,24 +1,43 @@
-# Entorno virtual
+# --- Entorno y Configuración ---
 venv/
 env/
 .env
 
-# Archivos compilados de Python
+# --- Python ---
 __pycache__/
 *.py[cod]
 
-# Datos Geoespaciales (No subir mapas pesados)
+# --- Carpetas de Datos (IMPORTANTE) ---
+mfe_galicia/
+data/
+output/
+
+# --- Archivos Geoespaciales y Pesados ---
+# Imágenes Raster
 *.tif
 *.TIF
 *.asc
+*.img
+*.dem
+
+# Vectores (Shapefiles y sus acompañantes)
 *.shp
 *.shx
 *.dbf
-*.zip
-*.json
+*.prj
+*.sbn
+*.sbx
+*.xml
+*.cpg
 *.geojson
+*.json
 
-# Archivos de sistema y IDE
+# Comprimidos
+*.zip
+*.gz
+*.tar
+
+# --- Sistema e IDEs ---
 .DS_Store
 .vscode/
 .idea/
