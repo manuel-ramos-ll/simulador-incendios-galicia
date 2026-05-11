@@ -7,13 +7,13 @@ def calcular_pendiente_orientacion(dem, cell_size):
     """Calcula pendiente y orientación"""
     dy, dx = np.gradient(dem, cell_size)
     
-    slope_rad = np.arctan(np.sqrt(dx**2 + dy**2))
-    slope_deg = np.degrees(slope_rad)
+    pendiente_rad = np.arctan(np.sqrt(dx**2 + dy**2))
+    pendiente_deg = np.degrees(pendiente_rad)
     
-    aspect_rad = np.arctan2(-dx, dy)
-    aspect_deg = (np.degrees(aspect_rad) + 360) % 360
+    orientacion_rad = np.arctan2(-dx, dy)
+    orientacion_deg = (np.degrees(orientacion_rad) + 360) % 360
 
-    return slope_deg, aspect_deg
+    return pendiente_deg, orientacion_deg
 
 # --- CONFIGURACIÓN ---
 ARCHIVO_MDT = "terreno.tif" 
@@ -22,7 +22,7 @@ try:
     print(f"Abriendo {ARCHIVO_MDT}...")
     with rasterio.open(ARCHIVO_MDT) as src:
         elevacion = src.read(1)
-        # Manejo de valores nulos (importante para que no salgan picos raros)
+        # Manejo de valores nulos para que no salgan picos raros
         elevacion = np.where(elevacion == src.nodata, np.nan, elevacion)
         
         transform = src.transform
@@ -84,7 +84,7 @@ try:
     ax4.set_title("Relieve 3D")
     ax4.set_zlabel('Altitud (m)')
     
-    # Cambiar el ángulo de vista inicial (Elevación, Azimut)
+    # Cambiar el ángulo de vista inicial
     ax4.view_init(elev=45, azim=135) 
     
     # Añadir barra de color

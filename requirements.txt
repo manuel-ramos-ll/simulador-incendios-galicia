@@ -2,3 +2,7 @@ numpy
 rasterio
 geopandas
 matplotlib
+requests
+streamlit
+streamlit-folium
+folium
