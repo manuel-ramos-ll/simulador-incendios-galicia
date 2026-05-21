@@ -304,7 +304,7 @@ else:
         map_zoom = 11
 
     m = folium.Map(location=map_center, zoom_start=map_zoom, min_zoom=8,
-        min_lat=min_lat, max_lat=max_lat, min_lon=min_lon, max_lon=max_lon, max_bounds=True)
+        min_lat=min_lat, max_lat=max_lat, min_lon=min_lon, max_lon=max_lon, max_bounds=True, tiles='OpenTopoMap')
 
     if st.session_state['foco_ignicion']:
         folium.Marker(location=st.session_state['foco_ignicion'], popup="Ignición", icon=Icon(color='red', icon='fire', prefix='fa')).add_to(m)
