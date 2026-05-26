@@ -1,3 +1,4 @@
+import time
 import streamlit as st
 import rasterio
 from rasterio.windows import from_bounds
@@ -20,10 +21,8 @@ from skimage import measure
 # --- 1. CONFIGURACIÓN DE PÁGINA E CSS EXTREMO ---
 st.set_page_config(page_title="Simulador de Incendios", layout="wide", initial_sidebar_state="collapsed")
 
-# 🌟 CSS INXECTADO CORRIXIDO
 st.markdown("""
     <style>
-    /* Eliminamos todo o recheo do bloque principal para que o mapa toque os bordos do navegador */
     .block-container { 
         padding-top: 3rem !important; 
         padding-bottom: 0rem !important; 
@@ -34,7 +33,6 @@ st.markdown("""
     footer {visibility: hidden;} 
     header {background-color: transparent !important;}
     
-    /* Panel de métricas sobre o mapa */
     div[data-testid="metric-container"] {
         background-color: rgba(255, 255, 255, 0.95);
         border: 1px solid rgba(128, 128, 128, 0.3);
@@ -43,23 +41,20 @@ st.markdown("""
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
     }
     
-    /* Marxes interiores para o texto da barra superior */
     .barra-ferramentas {
         padding-left: 1.5rem;
         padding-right: 1.5rem;
         margin-bottom: 0.5rem;
     }
     
-    /* 🌟 AXUSTE VISUAL PARA O TÍTULO DENTRO DA BARRA 🌟 */
     .barra-ferramentas h3 {
-        margin-top: -14px !important; /* Empuxamos o título cara arriba */
-        margin-bottom: 0px !important;  /* Quitamos marxe inferior */
+        margin-top: -14px !important; 
+        margin-bottom: 0px !important;  
         padding-top: 0px !important;
     }
     </style>
     """, unsafe_allow_html=True)
 
-# ... (Resto das variables e funcións loicas da Sección 2 quedan igual) ...
 FICHEIRO_MDT = "MDT_Galicia_25m.tif"
 FICHEIRO_COMBUSTIBLE = "Combustibles_Galicia_25m.tif" 
 
@@ -67,8 +62,10 @@ FICHEIRO_COMBUSTIBLE = "Combustibles_Galicia_25m.tif"
 if 'foco_ignicion' not in st.session_state: st.session_state['foco_ignicion'] = None 
 if 'mapa_resultado' not in st.session_state: st.session_state['mapa_resultado'] = None
 if 'kpis_resultado' not in st.session_state: st.session_state['kpis_resultado'] = None
+if 'ultimo_click_invalido' not in st.session_state: st.session_state['ultimo_click_invalido'] = None
+if 'erro_incombustible' not in st.session_state: st.session_state['erro_incombustible'] = False # 🌟 Nova variable para o aviso fixo
 
-# ... (Definición de consultar_viento_api) ...
+# --- 2. FUNCIÓNS LÓXICAS ---
 def consultar_viento_api(api_key, bounds, crs_raster):
     transformer_to_wgs84 = Transformer.from_crs(crs_raster, "EPSG:4326", always_xy=True)
     if hasattr(bounds, 'left'):
@@ -116,15 +113,12 @@ if not os.path.exists(FICHEIRO_MDT) or not os.path.exists(FICHEIRO_COMBUSTIBLE):
     st.error(f"❌ Faltan os mapas mestres de Galicia.")
     st.stop()
 
-
 # --- 3. BARRA SUPERIOR DE FERRAMENTAS FLOTANTE ---
 st.markdown("<div class='barra-ferramentas'>", unsafe_allow_html=True)
 
-# Mantemos a aliñación central
 col_titulo, col_slider, col_menu, col_limpar, col_lanzar = st.columns([1.5, 1.5, 1.5, 1, 1.5], vertical_alignment="center")
 
 with col_titulo:
-    # 🌟 EMPUXE RELATIVO DIRECTO: Usamos 'top: -18px' para forzar a subida
     st.markdown(
         """
         <div style='font-size: 24px; font-weight: bold; position: relative; top: -10px; white-space: nowrap;'>
@@ -141,9 +135,24 @@ with col_menu:
         usar_manual = st.checkbox("Control Manual (Override)", value=True)
         if usar_manual:
             v_velocidad = st.slider("Velocidade (km/h)", 0.0, 50.0, 15.0)
+            
+            grafico_vento = st.empty()
             v_direccion = st.slider("Dirección (º)", 0, 360, 45, step=5)
+            
             pts_card = ["Norte", "Nordés", "Leste", "Sueste", "Sur", "Suroeste", "Oeste", "Noroeste"]
-            st.caption(f"🧭 O vento empuxa o lume cara o **{pts_card[int(round(v_direccion / 45)) % 8]}**")
+            nome_vento = pts_card[int(round(v_direccion / 45)) % 8]
+            
+            grafico_vento.markdown(
+                f"""
+                <div style="display: flex; align-items: center; background-color: rgba(128, 128, 128, 0.1); padding: 10px; border-radius: 8px; margin-bottom: 5px; margin-top: 5px;">
+                    <div style="font-size: 28px; margin-right: 15px; transform: rotate({v_direccion}deg); display: inline-block; transition: transform 0.2s ease-out;">⬇️</div>
+                    <div style="line-height: 1.2;">
+                        <strong>Vento {nome_vento}</strong><br>
+                        <span style="font-size: 12px; opacity: 0.8;">A frecha indica o avance</span>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
             v_humedad = st.slider("Humidade (%)", 10, 100, 30)
             api_key = ""
         else:
@@ -159,9 +168,11 @@ if limpar:
     st.session_state['foco_ignicion'] = None
     st.session_state['mapa_resultado'] = None
     st.session_state['kpis_resultado'] = None
+    st.session_state['ultimo_click_invalido'] = None 
+    st.session_state['erro_incombustible'] = False
     st.rerun()
 
-# PANEIS KPI RESULTADOS SOBRE O MAPA
+# 🌟 PANEIS KPI RESULTADOS OU AVISOS SOBRE O MAPA 🌟
 if st.session_state['kpis_resultado'] is not None:
     ha, max_mins, vel_reporte, rh_ambiente = st.session_state['kpis_resultado']
     c1, c2, c3, c4 = st.columns(4)
@@ -169,10 +180,13 @@ if st.session_state['kpis_resultado'] is not None:
     c2.metric("Tempo de Avance", f"{max_mins/60:.1f} hr")
     c3.metric("Vento Medio", f"{vel_reporte:.1f} km/h")
     c4.metric("Humidade Ambiente", f"{rh_ambiente}%")
+elif st.session_state['erro_incombustible']:
+    st.warning("⚠️ O lume non se propagou (posible zona incombustible ou barreira de humidade). Por favor, fai clic noutro punto do mapa.")
 elif st.session_state['foco_ignicion']:
     st.success(f"📍 Coordenadas seleccionadas como punto de ignición: {st.session_state['foco_ignicion'][0]:.4f}, {st.session_state['foco_ignicion'][1]:.4f}")
 
-st.markdown("</div>", unsafe_allow_html=True) # Peche da marxe superior
+st.markdown("</div>", unsafe_allow_html=True) 
+
 # --- 4. EXECUCIÓN DO MOTOR (Se pulsamos iniciar) ---
 if lanzar:
     if not usar_manual and not api_key:
@@ -279,41 +293,68 @@ if lanzar:
 
                     folium.Marker(location=ignicion_coords, icon=Icon(color='black', icon='fire', prefix='fa')).add_to(m_res)
                     
-                    # Gardamos os resultados na sesión para superpoñelos
                     st.session_state['mapa_resultado'] = m_res._repr_html_()
                     st.session_state['kpis_resultado'] = (ha, max_mins, v_rep, rh_ambiente)
+                    st.session_state['erro_incombustible'] = False 
                     st.rerun() 
                 else:
-                    st.warning("O lume non se propagou (posible zona incombustible).")
+                    # 🌟 Cando o lume non propaga, limpamos e mostramos a alerta persistente 🌟
+                    st.session_state['foco_ignicion'] = None
+                    st.session_state['mapa_resultado'] = None
+                    st.session_state['kpis_resultado'] = None
+                    st.session_state['erro_incombustible'] = True
+                    st.rerun()
+
             except Exception as e:
                 st.error(f"❌ Erro analítico: {e}")
 
 # --- 5. RENDERIZADO DO MAPA A PANTALLA COMPLETA ---
 if st.session_state['mapa_resultado'] is not None:
-    # Se hai resultado, inxectamos o HTML do mapa renderizado abarcando a pantalla
     components.html(st.session_state['mapa_resultado'], height=800)
 else:
-    # Se non hai resultado, mostramos o mapa de selección inicial
     min_lat, max_lat = 41.8, 43.9
     min_lon, max_lon = -9.4, -6.7
     map_center = [42.8, -7.9]
-    map_zoom = 8
+    map_zoom = 9
 
     if st.session_state['foco_ignicion']:
         map_center = st.session_state['foco_ignicion']
         map_zoom = 11
 
-    m = folium.Map(location=map_center, zoom_start=map_zoom, min_zoom=8,
+    m = folium.Map(location=map_center, zoom_start=map_zoom, min_zoom=9,
         min_lat=min_lat, max_lat=max_lat, min_lon=min_lon, max_lon=max_lon, max_bounds=True, tiles='OpenTopoMap')
 
     if st.session_state['foco_ignicion']:
         folium.Marker(location=st.session_state['foco_ignicion'], popup="Ignición", icon=Icon(color='red', icon='fire', prefix='fa')).add_to(m)
 
-    # st_folium usando uso completo e 800px de altura para ser un fondo xigante
     mapa_data = st_folium(m, height=800, use_container_width=True, key="mapa_galicia")
 
     if mapa_data["last_clicked"]:
-        clicked_coords = (mapa_data["last_clicked"]["lat"], mapa_data["last_clicked"]["lng"])
-        if clicked_coords != st.session_state['foco_ignicion']:
-            st.session_state['foco_ignicion'] = clicked_coords
-            st.rerun()
+        lat_c = mapa_data["last_clicked"]["lat"]
+        lon_c = mapa_data["last_clicked"]["lng"]
+        clicked_coords = (lat_c, lon_c)
+        
+        if clicked_coords != st.session_state['foco_ignicion'] and clicked_coords != st.session_state['ultimo_click_invalido']:
+            punto_valido = False
+            
+            try:
+                with rasterio.open(FICHEIRO_MDT) as src:
+                    t = Transformer.from_crs("EPSG:4326", src.crs, always_xy=True)
+                    x, y = t.transform(lon_c, lat_c)
+                    py, px = src.index(x, y)
+                    
+                    if 0 <= py < src.height and 0 <= px < src.width:
+                        pixel = src.read(1, window=rasterio.windows.Window(col_off=px, row_off=py, width=1, height=1))
+                        if pixel[0][0] != src.nodata:
+                            punto_valido = True
+            except Exception:
+                pass 
+            
+            if punto_valido:
+                st.session_state['foco_ignicion'] = clicked_coords
+                st.session_state['ultimo_click_invalido'] = None
+                st.session_state['erro_incombustible'] = False # 🌟 Apagamos o aviso cando escolle un punto bo
+                st.rerun()
+            else:
+                st.session_state['ultimo_click_invalido'] = clicked_coords
+                st.toast("❌ Localización inválida: Por favor, selecciona un foco de lume válido dentro de Galicia.", icon="🚫")
