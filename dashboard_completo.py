@@ -79,6 +79,19 @@ st.markdown("""
         margin-bottom: 0px !important;  
         padding-top: 0px !important;
     }
+
+    /* CONFIGURACIÓN PARA MÓVILES (Pantallas < 768px) */
+    @media screen and (max-width: 768px) {
+        /* Reduce la altura de los mapas (iframes) de 800px a 450px */
+        iframe {
+            height: 450px !important;
+        }
+        /* Ajusta los márgenes laterales para ganar espacio en pantallas estrechas */
+        .barra-ferramentas {
+            padding-left: 0.5rem !important;
+            padding-right: 0.5rem !important;
+        }
+    }        
     </style>
     """, unsafe_allow_html=True)
 
