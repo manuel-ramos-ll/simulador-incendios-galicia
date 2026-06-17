@@ -1,3 +1,5 @@
+scipy
+scikit-image
 numpy
 rasterio
 geopandas
