@@ -49,6 +49,8 @@ st.set_page_config(page_title="Simulador de Incendios", layout="wide", initial_s
 
 st.markdown("""
     <style>
+    div[data-testid="stMainBlockContainer"],
+    div[data-testid="stAppViewBlockContainer"],
     .block-container { 
         padding-top: 3rem !important; 
         padding-bottom: 0rem !important; 
@@ -81,23 +83,32 @@ st.markdown("""
 
     /* CONFIGURACIÓN PARA MÓVILES (Pantallas < 768px) */
     @media screen and (max-width: 768px) {
+        /* Reduce la altura de los mapas (iframes) */
         iframe {
             height: 450px !important;
         }
-        block-container {
-            padding-left: 1.2rem !important;
-            padding-right: 1.2rem !important;
+        
+        div[data-testid="stMainBlockContainer"], 
+        div[data-testid="stAppViewBlockContainer"],
+        .main .block-container {
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
         }
-            
+        
+        div[data-testid="stVerticalBlock"] > div {
+            margin-bottom: 0.3rem;
+        }
+
         div[data-testid="stPopoverBody"] {
-            padding-left: 1.2rem !important;
-            padding-right: 1.2rem !important;
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
         }
+        
         .barra-ferramentas {
-            padding-left: 0.5rem !important;
-            padding-right: 0.5rem !important;
+            padding-left: 0rem !important;
+            padding-right: 0rem !important;
         }
-    }        
+    }
     </style>
     """, unsafe_allow_html=True)
 
