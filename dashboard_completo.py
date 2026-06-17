@@ -49,8 +49,7 @@ st.set_page_config(page_title="Simulador de Incendios", layout="wide", initial_s
 
 st.markdown("""
     <style>
-    div[data-testid="stMainBlockContainer"],
-    div[data-testid="stAppViewBlockContainer"],
+    /* ESCRITORIO */
     .block-container { 
         padding-top: 3rem !important; 
         padding-bottom: 0rem !important; 
@@ -81,12 +80,46 @@ st.markdown("""
         padding-top: 0px !important;
     }
 
-    /* CONFIGURACIÓN PARA MÓVILES (Pantallas < 768px) */
-    @media screen and (max-width: 768px) {
-        /* Reduce la altura de los mapas (iframes) */
-        iframe {
-            height: 450px !important;
+    .titulo-app {
+        font-size: 24px; 
+        font-weight: bold; 
+        position: relative; 
+        top: -10px; 
+        white-space: nowrap;
+    }
+    .subtitulo-slider {
+        text-align: center; 
+        font-size: 13px; 
+        font-weight: 600; 
+        opacity: 0.75; 
+        position: relative; 
+        top: -15px; 
+        pointer-events: none;
+        white-space: nowrap;
+    }
+
+    /* PANTALLAS MEDIANAS */
+    @media screen and (min-width: 769px) and (max-width: 1800px) {
+        .titulo-app {
+            font-size: 18px !important; 
+            white-space: normal !important; 
+            line-height: 1.2 !important;
+            top: -5px !important;
         }
+        .subtitulo-slider {
+            font-size: 11px !important;
+            white-space: normal !important;
+        }
+        div[data-testid="stButton"] button p, 
+        div[data-testid="stPopover"] button p {
+            font-size: 14px !important;
+        }
+    }
+
+    /* MÓBILES */
+    @media screen and (max-width: 768px) {
+       
+        iframe { height: 450px !important; }
         
         div[data-testid="stMainBlockContainer"], 
         div[data-testid="stAppViewBlockContainer"],
@@ -107,6 +140,14 @@ st.markdown("""
         .barra-ferramentas {
             padding-left: 0rem !important;
             padding-right: 0rem !important;
+        }
+        
+        .titulo-app {
+            font-size: 22px !important;
+            white-space: normal !important; 
+            text-align: center !important;
+            top: 0px !important;
+            margin-bottom: 10px;
         }
     }
     </style>
@@ -176,34 +217,11 @@ st.markdown("<div class='barra-ferramentas'>", unsafe_allow_html=True)
 col_titulo, col_slider, col_menu, col_limpar, col_lanzar = st.columns([1.5, 1.5, 1.5, 1, 1.5], vertical_alignment="center")
 
 with col_titulo:
-    st.markdown(
-        """
-        <div style='font-size: 24px; font-weight: bold; position: relative; top: -10px; white-space: nowrap;'>
-            🔥 Simulador de Incendios en Galicia
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
+    st.markdown("<div class='titulo-app'>🔥 Simulador de Incendios en Galicia</div>", unsafe_allow_html=True)
 
 with col_slider:
     horas_sim = st.slider("Horas", 1, 12, 6, label_visibility="collapsed")
-    st.markdown(
-        f"""
-        <div style='
-            text-align: center; 
-            font-size: 13px; 
-            font-weight: 600; 
-            opacity: 0.75; 
-            position: relative; 
-            top: -15px; 
-            pointer-events: none;
-            white-space: nowrap;
-        '>
-            Horas de predicción
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
+    st.markdown("<div class='subtitulo-slider'>Horas de predicción</div>", unsafe_allow_html=True)
 
 with col_menu:
     with st.popover("⚙️ Clima e API", use_container_width=True):
