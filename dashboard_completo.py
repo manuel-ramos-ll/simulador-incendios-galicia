@@ -19,20 +19,19 @@ import streamlit.components.v1 as components
 from skimage import measure
 
 
-# Definimos a URL de Dropbox co dl=1 ao final para a descarga directa
+# Definimos a URL para a descarga directa do modelo do terreo
 URL_MDT = "https://www.dropbox.com/scl/fi/ustgvuxtt27aoct9mpfix/MDT_Galicia_25m.tif?rlkey=w4xa3rgzzu8zqydu5ppz6wown&st=ahx8imek&dl=1"
 ARQUIVO_MDT = "MDT_Galicia_25m.tif"
 
+# Comprobación de obtención do arquivo do modelo do terreo
 def garantir_mapa_mestre():
-    # Comproba se o arquivo xa está na máquina virtual
     if not os.path.exists(ARQUIVO_MDT):
-        # Mostra unha mensaxe na interface mentres traballa en segundo plano
         with st.spinner(f"📥 Descargando topografía de alta resolución ({ARQUIVO_MDT})... Isto levará uns segundos só a primeira vez."):
             try:
                 resposta = requests.get(URL_MDT, stream=True)
                 resposta.raise_for_status()
                 
-                # Garda o ficheiro a cachiños para non saturar a memoria RAM do servidor
+                # Garda o ficheiro en trozos
                 with open(ARQUIVO_MDT, "wb") as f:
                     for chunk in resposta.iter_content(chunk_size=8192):
                         if chunk:
@@ -42,10 +41,10 @@ def garantir_mapa_mestre():
                 st.error(f"❌ Erro ao descargar o MDT: {e}")
                 st.stop() # Detén a aplicación se non hai mapa
 
-# Executamos a función nada máis arrincar o script
+
 garantir_mapa_mestre()
 
-# --- 1. CONFIGURACIÓN DE PÁGINA E CSS EXTREMO ---
+# --- 1. CONFIGURACIÓN DE PÁGINA E CSS ---
 st.set_page_config(page_title="Simulador de Incendios", layout="wide", initial_sidebar_state="collapsed")
 
 st.markdown("""
@@ -82,11 +81,18 @@ st.markdown("""
 
     /* CONFIGURACIÓN PARA MÓVILES (Pantallas < 768px) */
     @media screen and (max-width: 768px) {
-        /* Reduce la altura de los mapas (iframes) de 800px a 450px */
         iframe {
             height: 450px !important;
         }
-        /* Ajusta los márgenes laterales para ganar espacio en pantallas estrechas */
+        block-container {
+            padding-left: 1.2rem !important;
+            padding-right: 1.2rem !important;
+        }
+            
+        div[data-testid="stPopoverBody"] {
+            padding-left: 1.2rem !important;
+            padding-right: 1.2rem !important;
+        }
         .barra-ferramentas {
             padding-left: 0.5rem !important;
             padding-right: 0.5rem !important;
@@ -153,7 +159,7 @@ if not os.path.exists(FICHEIRO_MDT) or not os.path.exists(FICHEIRO_COMBUSTIBLE):
     st.error(f"❌ Faltan os mapas mestres de Galicia.")
     st.stop()
 
-# --- 3. BARRA SUPERIOR DE FERRAMENTAS FLOTANTE ---
+# --- 3. BARRA SUPERIOR DE FERRAMENTAS ---
 st.markdown("<div class='barra-ferramentas'>", unsafe_allow_html=True)
 
 col_titulo, col_slider, col_menu, col_limpar, col_lanzar = st.columns([1.5, 1.5, 1.5, 1, 1.5], vertical_alignment="center")
@@ -221,7 +227,7 @@ with col_limpar:
 with col_lanzar:
     lanzar = st.button("🚀 Simular", type="primary", use_container_width=True)
 
-# Lóxica da botoneira de limpeza
+# Botón de limpeza
 if limpar:
     st.session_state['foco_ignicion'] = None
     st.session_state['mapa_resultado'] = None
@@ -230,9 +236,8 @@ if limpar:
     st.session_state['erro_incombustible'] = False
     st.rerun()
 
-# 🌟 PANEIS KPI RESULTADOS OU AVISOS SOBRE O MAPA 🌟
+# RESULTADOS 
 if st.session_state['kpis_resultado'] is not None:
-    # 🌟 Restaurado a 4 columnas orixinais
     ha, max_mins, vel_reporte, rh_ambiente = st.session_state['kpis_resultado']
     c1, c2, c3, c4 = st.columns(4) 
     c1.metric("Superficie Afectada", f"{ha:.1f} ha")
@@ -246,7 +251,7 @@ elif st.session_state['foco_ignicion']:
 
 st.markdown("</div>", unsafe_allow_html=True) 
 
-# --- 4. EXECUCIÓN DO MOTOR (Se pulsamos iniciar) ---
+# --- 4. EXECUCIÓN DO MOTOR ---
 if lanzar:
     if not usar_manual and not api_key:
         st.error("⚠️ Precísase a API KEY ou o modo manual.")
@@ -255,7 +260,6 @@ if lanzar:
     else:
         with st.spinner("Procesando malla xeoespacial..."):
             try:
-                # ⏱️ INICIAMOS O CRONÓMETRO INTERNO
                 start_time = time.time()
                 
                 RADIO_SIMULACION_METROS = int(horas_sim * 2500)
@@ -321,7 +325,7 @@ if lanzar:
                 R0 = np.zeros_like(fuel, dtype=float)
                 for m, v in V_R0.items(): R0[fuel == m] = v
                 
-                # === 🌟 TRUCO DE ANISOTROPÍA RADIAL 🌟 ===
+                # Facer que o vento afecte negativa ou positivamente a velocidade de propagación
                 dx_grid, dy_grid = tx_grid - x_click, ty_grid - y_click
                 dist_grid = np.sqrt(dx_grid**2 + dy_grid**2) + 1e-6
                 
@@ -336,7 +340,7 @@ if lanzar:
                 
                 ros_max = R0 * (1 + np.sqrt((Sx + (0.05 * U_v))**2 + (Sy + (0.05 * V_v))**2)) * f_h
                 ros_max = ros_max * factor_direccion
-                # =========================================
+
                 cost = np.full_like(ros_max, np.inf, dtype=np.float32)
                 cost[ros_max > 0.01] = cell_size / ros_max[ros_max > 0.01]
 
@@ -370,7 +374,7 @@ if lanzar:
 
                     folium.Marker(location=ignicion_coords, icon=Icon(color='black', icon='fire', prefix='fa')).add_to(m_res)
                     
-                    # ⏱️ PARAMOS O CRONÓMETRO E IMPRIMIMOS POR CONSOLA
+                    # Resultados de tempo
                     tempo_exec = time.time() - start_time
                     print(f"\n==================================================")
                     print(f"🔥 SIMULACIÓN REMATADA ({horas_sim} HORAS) 🔥")
@@ -391,7 +395,7 @@ if lanzar:
             except Exception as e:
                 st.error(f"❌ Erro analítico: {e}")
 
-# --- 5. RENDERIZADO DO MAPA A PANTALLA COMPLETA ---
+# --- 5. RENDERIZADO DO MAPA ---
 if st.session_state['mapa_resultado'] is not None:
     components.html(st.session_state['mapa_resultado'], height=800)
 else:
