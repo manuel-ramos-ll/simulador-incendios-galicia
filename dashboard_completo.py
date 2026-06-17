@@ -18,6 +18,33 @@ import matplotlib.colors as mcolors
 import streamlit.components.v1 as components
 from skimage import measure
 
+
+# Definimos a URL de Dropbox co dl=1 ao final para a descarga directa
+URL_MDT = "https://www.dropbox.com/scl/fi/ustgvuxtt27aoct9mpfix/MDT_Galicia_25m.tif?rlkey=w4xa3rgzzu8zqydu5ppz6wown&st=ahx8imek&dl=1"
+ARQUIVO_MDT = "MDT_Galicia_25m.tif"
+
+def garantir_mapa_mestre():
+    # Comproba se o arquivo xa está na máquina virtual
+    if not os.path.exists(ARQUIVO_MDT):
+        # Mostra unha mensaxe na interface mentres traballa en segundo plano
+        with st.spinner(f"📥 Descargando topografía de alta resolución ({ARQUIVO_MDT})... Isto levará uns segundos só a primeira vez."):
+            try:
+                resposta = requests.get(URL_MDT, stream=True)
+                resposta.raise_for_status()
+                
+                # Garda o ficheiro a cachiños para non saturar a memoria RAM do servidor
+                with open(ARQUIVO_MDT, "wb") as f:
+                    for chunk in resposta.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                st.success("✅ Topografía descargada correctamente.")
+            except Exception as e:
+                st.error(f"❌ Erro ao descargar o MDT: {e}")
+                st.stop() # Detén a aplicación se non hai mapa
+
+# Executamos a función nada máis arrincar o script
+garantir_mapa_mestre()
+
 # --- 1. CONFIGURACIÓN DE PÁGINA E CSS EXTREMO ---
 st.set_page_config(page_title="Simulador de Incendios", layout="wide", initial_sidebar_state="collapsed")
 
