@@ -63,7 +63,7 @@ if 'foco_ignicion' not in st.session_state: st.session_state['foco_ignicion'] = 
 if 'mapa_resultado' not in st.session_state: st.session_state['mapa_resultado'] = None
 if 'kpis_resultado' not in st.session_state: st.session_state['kpis_resultado'] = None
 if 'ultimo_click_invalido' not in st.session_state: st.session_state['ultimo_click_invalido'] = None
-if 'erro_incombustible' not in st.session_state: st.session_state['erro_incombustible'] = False # 🌟 Nova variable para o aviso fixo
+if 'erro_incombustible' not in st.session_state: st.session_state['erro_incombustible'] = False 
 
 # --- 2. FUNCIÓNS LÓXICAS ---
 def consultar_viento_api(api_key, bounds, crs_raster):
@@ -122,13 +122,31 @@ with col_titulo:
     st.markdown(
         """
         <div style='font-size: 24px; font-weight: bold; position: relative; top: -10px; white-space: nowrap;'>
-            🔥 Simulador de Incendios
+            🔥 Simulador de Incendios en Galicia
         </div>
         """, 
         unsafe_allow_html=True
     )
+
 with col_slider:
-    horas_sim = st.slider("Horizonte de predición (h)", 1, 12, 6, label_visibility="collapsed")
+    horas_sim = st.slider("Horas", 1, 12, 6, label_visibility="collapsed")
+    st.markdown(
+        f"""
+        <div style='
+            text-align: center; 
+            font-size: 13px; 
+            font-weight: 600; 
+            opacity: 0.75; 
+            position: relative; 
+            top: -15px; 
+            pointer-events: none;
+            white-space: nowrap;
+        '>
+            Horas de predicción
+        </div>
+        """, 
+        unsafe_allow_html=True
+    )
 
 with col_menu:
     with st.popover("⚙️ Clima e API", use_container_width=True):
@@ -174,8 +192,9 @@ if limpar:
 
 # 🌟 PANEIS KPI RESULTADOS OU AVISOS SOBRE O MAPA 🌟
 if st.session_state['kpis_resultado'] is not None:
+    # 🌟 Restaurado a 4 columnas orixinais
     ha, max_mins, vel_reporte, rh_ambiente = st.session_state['kpis_resultado']
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3, c4 = st.columns(4) 
     c1.metric("Superficie Afectada", f"{ha:.1f} ha")
     c2.metric("Tempo de Avance", f"{max_mins/60:.1f} hr")
     c3.metric("Vento Medio", f"{vel_reporte:.1f} km/h")
@@ -196,6 +215,9 @@ if lanzar:
     else:
         with st.spinner("Procesando malla xeoespacial..."):
             try:
+                # ⏱️ INICIAMOS O CRONÓMETRO INTERNO
+                start_time = time.time()
+                
                 RADIO_SIMULACION_METROS = int(horas_sim * 2500)
                 ignicion_coords = st.session_state['foco_ignicion']
 
@@ -259,7 +281,22 @@ if lanzar:
                 R0 = np.zeros_like(fuel, dtype=float)
                 for m, v in V_R0.items(): R0[fuel == m] = v
                 
+                # === 🌟 TRUCO DE ANISOTROPÍA RADIAL 🌟 ===
+                dx_grid, dy_grid = tx_grid - x_click, ty_grid - y_click
+                dist_grid = np.sqrt(dx_grid**2 + dy_grid**2) + 1e-6
+                
+                wind_mag = np.sqrt(U_v**2 + V_v**2) + 1e-6
+                u_wind_norm, v_wind_norm = U_v / wind_mag, V_v / wind_mag
+                u_dir_norm, v_dir_norm = dx_grid / dist_grid, dy_grid / dist_grid
+                
+                cos_theta = (u_dir_norm * u_wind_norm) + (v_dir_norm * v_wind_norm)
+                
+                wind_weight = np.clip(wind_mag / 20.0, 0.0, 0.85) 
+                factor_direccion = 1.0 - (wind_weight * (1.0 - cos_theta) / 2.0)
+                
                 ros_max = R0 * (1 + np.sqrt((Sx + (0.05 * U_v))**2 + (Sy + (0.05 * V_v))**2)) * f_h
+                ros_max = ros_max * factor_direccion
+                # =========================================
                 cost = np.full_like(ros_max, np.inf, dtype=np.float32)
                 cost[ros_max > 0.01] = cell_size / ros_max[ros_max > 0.01]
 
@@ -293,12 +330,18 @@ if lanzar:
 
                     folium.Marker(location=ignicion_coords, icon=Icon(color='black', icon='fire', prefix='fa')).add_to(m_res)
                     
+                    # ⏱️ PARAMOS O CRONÓMETRO E IMPRIMIMOS POR CONSOLA
+                    tempo_exec = time.time() - start_time
+                    print(f"\n==================================================")
+                    print(f"🔥 SIMULACIÓN REMATADA ({horas_sim} HORAS) 🔥")
+                    print(f"⏱️ Tempo de execución: {tempo_exec:.4f} segundos")
+                    print(f"==================================================\n")
+                    
                     st.session_state['mapa_resultado'] = m_res._repr_html_()
-                    st.session_state['kpis_resultado'] = (ha, max_mins, v_rep, rh_ambiente)
+                    st.session_state['kpis_resultado'] = (ha, max_mins, v_rep, rh_ambiente) # Restaurado a 4 valores
                     st.session_state['erro_incombustible'] = False 
                     st.rerun() 
                 else:
-                    # 🌟 Cando o lume non propaga, limpamos e mostramos a alerta persistente 🌟
                     st.session_state['foco_ignicion'] = None
                     st.session_state['mapa_resultado'] = None
                     st.session_state['kpis_resultado'] = None
@@ -353,7 +396,7 @@ else:
             if punto_valido:
                 st.session_state['foco_ignicion'] = clicked_coords
                 st.session_state['ultimo_click_invalido'] = None
-                st.session_state['erro_incombustible'] = False # 🌟 Apagamos o aviso cando escolle un punto bo
+                st.session_state['erro_incombustible'] = False 
                 st.rerun()
             else:
                 st.session_state['ultimo_click_invalido'] = clicked_coords
