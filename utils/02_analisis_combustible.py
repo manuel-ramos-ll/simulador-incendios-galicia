@@ -6,13 +6,13 @@ import os
 # Apuntamos al archivo dentro de la carpeta que mostraste en la imagen
 ARCHIVO_SHAPEFILE = "mfe_galicia/MFE_11.shp" 
 
-# Tu archivo del terreno (asegúrate de que el nombre sea exacto)
+# Tu archivo del terreno 
 ARCHIVO_MDT = "terreno.tif"
 
 try:
     print("--- 1. VERIFICACIÓN DE ARCHIVOS ---")
     if not os.path.exists(ARCHIVO_SHAPEFILE):
-        print(f"❌ ERROR: No encuentro el archivo en: {ARCHIVO_SHAPEFILE}")
+        print(f"❌ ERROR: No se encuentra el archivo en: {ARCHIVO_SHAPEFILE}")
         print("   Asegúrate de que la carpeta 'mfe_galicia' está junto a este script.")
         exit()
     else:
@@ -20,7 +20,7 @@ try:
 
     print("\n--- 2. CARGANDO DATOS (Esto tardará unos segundos...) ---")
     
-    # Leemos solo las primeras 50 filas para no saturar la memoria ahora mismo
+    # Leemos solo las primeras 50 filas para no saturar la memoria
     gdf = gpd.read_file(ARCHIVO_SHAPEFILE, rows=50)
     
     # Cargamos el raster para comparar coordenadas

@@ -108,7 +108,7 @@ try:
     
     plt.imshow(combustible_array, cmap=cmap, vmin=0, vmax=13, interpolation='nearest')
     plt.colorbar(label='Modelo Combustible (1=Pasto, 0=Carretera/Agua)')
-    plt.title("Mapa de Combustible FINAL (Con cultivos parcheados)")
+    plt.title("Mapa de Combustible")
     plt.show()
 
 except Exception as e:
