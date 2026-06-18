@@ -119,7 +119,10 @@ st.markdown("""
     /* MÓBILES */
     @media screen and (max-width: 768px) {
        
-        iframe { height: 450px !important; }
+        iframe,
+        .stHtmlComponent iframe { 
+            height: 450px !important; 
+        }
         
         div[data-testid="stMainBlockContainer"], 
         div[data-testid="stAppViewBlockContainer"],
@@ -406,12 +409,12 @@ if lanzar:
                     # Resultados de tempo
                     tempo_exec = time.time() - start_time
                     print(f"\n==================================================")
-                    print(f"🔥 SIMULACIÓN REMATADA ({horas_sim} HORAS) 🔥")
-                    print(f"⏱️ Tempo de execución: {tempo_exec:.4f} segundos")
+                    print(f" SIMULACIÓN REMATADA ({horas_sim} HORAS)")
+                    print(f" Tempo de execución: {tempo_exec:.4f} segundos")
                     print(f"==================================================\n")
                     
                     st.session_state['mapa_resultado'] = m_res._repr_html_()
-                    st.session_state['kpis_resultado'] = (ha, max_mins, v_rep, rh_ambiente) # Restaurado a 4 valores
+                    st.session_state['kpis_resultado'] = (ha, max_mins, v_rep, rh_ambiente) 
                     st.session_state['erro_incombustible'] = False 
                     st.rerun() 
                 else:
@@ -437,7 +440,7 @@ else:
         map_center = st.session_state['foco_ignicion']
         map_zoom = 11
 
-    m = folium.Map(location=map_center, zoom_start=map_zoom, min_zoom=9,
+    m = folium.Map(location=map_center, zoom_start=map_zoom,
         min_lat=min_lat, max_lat=max_lat, min_lon=min_lon, max_lon=max_lon, max_bounds=True, tiles='OpenTopoMap')
 
     if st.session_state['foco_ignicion']:
