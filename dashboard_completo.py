@@ -396,7 +396,7 @@ if lanzar:
                     rgba = plt.get_cmap('YlOrRd')(mcolors.Normalize(vmin=0, vmax=max_mins)(tiempos))
                     rgba[np.isnan(tiempos), 3] = 0  
                     
-                    m_res = folium.Map(location=[ignicion_coords[0], ignicion_coords[1]], zoom_start=13, tiles='OpenTopoMap')
+                    m_res = folium.Map(location=[ignicion_coords[0], ignicion_coords[1]], zoom_start=13, min_zoom=6, tiles='OpenTopoMap')
                     folium.raster_layers.ImageOverlay(image=rgba, bounds=b_latlon, opacity=0.4).add_to(m_res)
 
                     for n in np.arange(60 if max_mins > 120 else 15, max_mins, 60 if max_mins > 120 else 15):
@@ -413,7 +413,7 @@ if lanzar:
                     print(f" Tempo de execución: {tempo_exec:.4f} segundos")
                     print(f"==================================================\n")
                     
-                    st.session_state['mapa_resultado'] = m_res._repr_html_()
+                    st.session_state['mapa_resultado'] = m_res
                     st.session_state['kpis_resultado'] = (ha, max_mins, v_rep, rh_ambiente) 
                     st.session_state['erro_incombustible'] = False 
                     st.rerun() 
@@ -429,7 +429,7 @@ if lanzar:
 
 # --- 5. RENDERIZADO DO MAPA ---
 if st.session_state['mapa_resultado'] is not None:
-    components.html(st.session_state['mapa_resultado'], height=800)
+    st_folium(st.session_state['mapa_resultado'], height=800, use_container_width=True, returned_objects=[], key="mapa_resultado_render")
 else:
     min_lat, max_lat = 41.8, 43.9
     min_lon, max_lon = -9.4, -6.7
