@@ -1,0 +1,110 @@
+.block-container {
+    padding-top: 3rem !important;
+    padding-bottom: 0rem !important;
+    padding-left: 0rem !important;
+    padding-right: 0rem !important;
+    max-width: 100% !important;
+}
+
+footer {
+    visibility: hidden;
+}
+
+header {
+    background-color: transparent !important;
+}
+
+div[data-testid="metric-container"] {
+    background-color: rgba(255, 255, 255, 0.95);
+    border: 1px solid rgba(128, 128, 128, 0.3);
+    padding: 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.barra-ferramentas {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.barra-ferramentas h3 {
+    margin-top: -14px !important;
+    margin-bottom: 0px !important;
+    padding-top: 0px !important;
+}
+
+.titulo-app {
+    font-size: 24px;
+    font-weight: bold;
+    position: relative;
+    top: -10px;
+    white-space: nowrap;
+}
+
+.subtitulo-slider {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0.75;
+    position: relative;
+    top: -15px;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+@media screen and (min-width: 769px) and (max-width: 1800px) {
+    .titulo-app {
+        font-size: 18px !important;
+        white-space: normal !important;
+        line-height: 1.2 !important;
+        top: -5px !important;
+    }
+
+    .subtitulo-slider {
+        font-size: 11px !important;
+        white-space: normal !important;
+    }
+
+    div[data-testid="stButton"] button p,
+    div[data-testid="stPopover"] button p {
+        font-size: 14px !important;
+    }
+}
+
+@media screen and (max-width: 768px) {
+
+    iframe,
+    .stHtmlComponent iframe {
+        height: 450px !important;
+    }
+
+    div[data-testid="stMainBlockContainer"],
+    div[data-testid="stAppViewBlockContainer"],
+    .main .block-container {
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+    }
+
+    div[data-testid="stVerticalBlock"]>div {
+        margin-bottom: 0.3rem;
+    }
+
+    div[data-testid="stPopoverBody"] {
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+    }
+
+    .barra-ferramentas {
+        padding-left: 0rem !important;
+        padding-right: 0rem !important;
+    }
+
+    .titulo-app {
+        font-size: 22px !important;
+        white-space: normal !important;
+        text-align: center !important;
+        top: 0px !important;
+        margin-bottom: 10px;
+    }
+}
