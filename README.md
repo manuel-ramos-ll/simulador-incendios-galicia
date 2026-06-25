@@ -28,6 +28,16 @@ O proxecto segue unha estrutura modular que separa a lóxica de negocio, o motor
 * `script_04_meteo.py`: Módulo encargado do consumo, análise e transformación de datos meteorolóxicos da API de MeteoGalicia.
 * `style.css`: Ficheiro de estilos encargado de garantir a adaptabilidade responsiva da interface.
 
+### 📂 Ferramentas de Desenvolvemento (`development_utils/`)
+
+Para a preparación de datos e tarefas auxiliares de desenvolvemento, o cartafol `development_utils/` contén os seguintes scripts:
+
+* `01_procesar_terreo.py`: Analiza e visualiza o modelo dixital de elevación (MDT). Calcula de forma vectorial a pendente e a orientación do terreo en graos e xera gráficos comparativos en 2D, ademais dun modelo interactivo en 3D do relevo.
+* `02_analisis_combustible.py`: Ferramenta de diagnóstico para inspeccionar de forma rápida as primeiras filas e a estrutura de columnas do Shapefile do Mapa Forestal de España (MFE), comprobando se o seu sistema de referencia espacial (CRS) coincide co do MDT de traballo.
+* `03_xeracion_combustible.py`: Recorta os polígonos de combustible do MFE segundo os límites xeográficos dun MDT de traballo específico (ex. `terreno.tif`), asigna os modelos de combustible de Rothermel (1-13) a partir do uso do solo e xera o ficheiro rasterizado resultante (`combustible.tif`).
+* `conversion_mfe.py`: Realiza o procesamento e rasterización a escala de toda Galicia, convertendo o Shapefile do MFE ao formato raster final de combustibles (`Combustibles_Galicia_25m.tif`) aliñado xeometricamente co MDT autonómico.
+* `combinador_mapa.py`: Combina e fusiona varias follas raster `.tif` dispersas dun MDT nun único mosaico continuo de alta resolución de toda a comunidade (`MDT_Galicia_25m.tif`) aplicando compresión LZW.
+
 ---
 
 ## 📦 Instalación Local

@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
+''' Ficheiro para análise e visualización do terreo '''
+
 def calcular_pendente_orientacion(dem, cell_size):
     """Calcula pendente e orientación"""
     dy, dx = np.gradient(dem, cell_size)
@@ -16,8 +18,8 @@ def calcular_pendente_orientacion(dem, cell_size):
     return pendente_deg, orientacion_deg
 
 # --- CONFIGURACIÓN ---
-# Introducir aquí a ruta do arquivo .tif
-ARCHIVO_MDT = "terreno.tif" 
+# ATENCIÓN: Substitúe esta variable polas túas rutas locais absolutas ou relativas
+ARCHIVO_MDT = "ruta/aos/teus/ficheiros_tif"
 
 try:
     print(f"Abrindo {ARCHIVO_MDT}...")

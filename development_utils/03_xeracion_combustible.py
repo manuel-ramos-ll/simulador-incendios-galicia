@@ -5,18 +5,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 from shapely.geometry import box
 
+''' Ficheiro para crear o mapa de combustible definitivo '''
+
 # --- CONFIGURACIÓN ---
-ARCHIVO_SHAPEFILE = "mfe_galicia/MFE_11.shp"
-ARCHIVO_MDT = "terreno.tif"
+# ATENCIÓN: Substitúe esta variable polas túas rutas locais absolutas ou relativas
+ARCHIVO_SHAPEFILE = "ruta/ao/teu/shapefile/ficheiro.shp"
+ARCHIVO_MDT = "ruta/aos/teus/ficheiros_tif"
 SALIDA_COMBUSTIBLE = "combustible.tif"
 
 def obtener_modelo_definitivo(fila):
     """
-    Lógica inteligente para asignar combustible:
+    Lógica para asignar combustible:
     1. Si el mapa ya trae un modelo numérico, úsalo.
     2. Si está vacío, deduce el modelo según el 'UsoMFE'.
     """
-    # 1. Intentar leer el ModeloComb original
     val_original = 0
     raw = fila['ModeloComb']
     
@@ -34,16 +36,16 @@ def obtener_modelo_definitivo(fila):
         return val_original
 
     # 2. Si no hay modelo, aplicar REGLAS DE PARCHEO según el Uso
-    uso = str(fila['UsoMFE']) # Convertir a texto por seguridad
+    uso = str(fila['UsoMFE'])
     
     if 'Cultivos' in uso:
-        return 1  # Asignamos Pasto Corto (permite paso del fuego)
+        return 1  # Asignamos Pasto Corto 
     
     if 'Desarbolado' in uso:
-        return 5  # Asignamos Matorral (Brush)
+        return 5  # Asignamos Matorral 
         
     if 'Arbolado' in uso:
-        return 9  # Asignamos Bosque estándar (Hojarasca)
+        return 9  # Asignamos Bosque estándar 
         
     # Artificial, Agua y otros se quedan en 0 (Cortafuegos)
     return 0
@@ -55,7 +57,6 @@ try:
         shape = src.shape
         transform = src.transform
         crs_objetivo = src.crs
-        # Caja para recortar
         bounds = src.bounds
         bbox_terreno = box(bounds.left, bounds.bottom, bounds.right, bounds.top)
 
@@ -64,19 +65,15 @@ try:
     gdf = gpd.read_file(ARCHIVO_SHAPEFILE)
     
     if gdf.crs != crs_objetivo:
-        print(f"   🔄 Reproyectando coordenadas a {crs_objetivo}...")
+        print(f"   Reproyectando coordenadas a {crs_objetivo}...")
         gdf = gdf.to_crs(crs_objetivo)
     
-    print("   ✂️  Recortando zona de interés...")
+    print("   Recortando zona de interés...")
     gdf_recortado = gdf.clip(bbox_terreno)
     
     print(f"   Procesando {len(gdf_recortado)} polígonos...")
-
-    # --- AQUÍ ESTÁ LA MAGIA ---
-    # Aplicamos la función fila por fila (axis=1)
     gdf_recortado['VALOR_FINAL'] = gdf_recortado.apply(obtener_modelo_definitivo, axis=1)
     
-    # Convertimos a entero pequeño para ahorrar memoria
     gdf_recortado['VALOR_FINAL'] = gdf_recortado['VALOR_FINAL'].astype('int16')
 
     print("\n--- PASO 3: RASTERIZACIÓN ---")
@@ -97,13 +94,12 @@ try:
     with rasterio.open(SALIDA_COMBUSTIBLE, 'w', **meta) as dst:
         dst.write(combustible_array, 1)
         
-    print(f"✅ Archivo '{SALIDA_COMBUSTIBLE}' generado correctamente.")
+    print(f" Archivo '{SALIDA_COMBUSTIBLE}' generado correctamente.")
 
     # Visualización comparativa
     plt.figure(figsize=(12, 6))
     
     # Mapa de colores personalizado para distinguir tipos
-    # 0=Negro (Carretera), 1=VerdeClaro (Cultivo), 9=VerdeOscuro (Bosque)
     cmap = plt.cm.get_cmap('tab20c', 14) 
     
     plt.imshow(combustible_array, cmap=cmap, vmin=0, vmax=13, interpolation='nearest')

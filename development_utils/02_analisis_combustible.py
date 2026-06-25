@@ -2,28 +2,31 @@ import geopandas as gpd
 import rasterio
 import os
 
-# --- CONFIGURACIÓN ---
-# Apuntamos al archivo dentro de la carpeta que mostraste en la imagen
-ARCHIVO_SHAPEFILE = "mfe_galicia/MFE_11.shp" 
+''' Ficheiro para análise da información que trae o combustible '''
 
-# Tu archivo del terreno 
-ARCHIVO_MDT = "terreno.tif"
+# --- CONFIGURACIÓN ---
+
+# Ruta do ficheiro do combustible
+# ATENCIÓN: Substitúe esta variable polas túas rutas locais absolutas ou relativas
+ARCHIVO_SHAPEFILE = "ruta/ao/teu/shapefile/ficheiro.shp" 
+
+# Ruta do terreo
+ARCHIVO_MDT = "ruta/aos/teus/ficheiros_tif"
 
 try:
     print("--- 1. VERIFICACIÓN DE ARCHIVOS ---")
     if not os.path.exists(ARCHIVO_SHAPEFILE):
         print(f"❌ ERROR: No se encuentra el archivo en: {ARCHIVO_SHAPEFILE}")
-        print("   Asegúrate de que la carpeta 'mfe_galicia' está junto a este script.")
         exit()
     else:
         print(f"✅ Archivo encontrado: {ARCHIVO_SHAPEFILE}")
 
     print("\n--- 2. CARGANDO DATOS (Esto tardará unos segundos...) ---")
     
-    # Leemos solo las primeras 50 filas para no saturar la memoria
+
     gdf = gpd.read_file(ARCHIVO_SHAPEFILE, rows=50)
     
-    # Cargamos el raster para comparar coordenadas
+
     with rasterio.open(ARCHIVO_MDT) as src:
         crs_raster = src.crs
 
@@ -40,8 +43,7 @@ try:
     print(gdf.columns.tolist())
     
     print("\n--- 4. MUESTRA DE CONTENIDO ---")
-    # Vamos a imprimir las primeras filas para ver qué datos traen
-    # Buscamos columnas típicas del MFE
+    # Impresión dos datos das primeiras filas 
     cols_a_mostrar = [c for c in gdf.columns if 'USO' in c or 'ID' in c or 'CLAVE' in c]
     
     if cols_a_mostrar:
