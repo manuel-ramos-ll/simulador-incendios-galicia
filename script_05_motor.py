@@ -64,8 +64,8 @@ def simular_incendio(ignicion_coords, horas_sim, usar_manual, v_velocidad, v_dir
             u_pts, v_pts = [15.0 * np.sin(rad)] * 4, [15.0 * np.cos(rad)] * 4
             rh_ambiente, v_rep = 30.0, 15.0
         else:
-            pos, u_pts, v_pts = v_data
-            rh_ambiente = 65.0 
+            pos, u_pts, v_pts, media_rh = v_data
+            rh_ambiente = media_rh 
             v_rep = np.mean(np.sqrt(np.array(u_pts)**2 + np.array(v_pts)**2))
 
         U_i = griddata(pos, u_pts, (tx_grid, ty_grid), method='cubic')

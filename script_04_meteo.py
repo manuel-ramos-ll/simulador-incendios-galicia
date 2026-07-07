@@ -22,7 +22,7 @@ def consultar_vento_api(api_key, bounds, crs_raster):
     coords_str = ";".join([f"{lon:.4f},{lat:.4f}" for lon, lat in zip(grid_lon.flatten(), grid_lat.flatten())])
 
     url = "https://servizos.meteogalicia.gal/apiv5/getNumericForecastInfo"
-    params = {"coords": coords_str, "variables": "wind", "models": "WRF", "format": "application/json", "API_KEY": api_key}
+    params = {"coords": coords_str, "variables": "wind,relative_humidity", "models": "WRF,WRF", "format": "application/json", "API_KEY": api_key}
 
     try:
         response = requests.get(url, params=params, timeout=30)
@@ -33,21 +33,32 @@ def consultar_vento_api(api_key, bounds, crs_raster):
     if "exception" in data: 
         return None, f"Erro API: {data['exception']['message']}"
     
-    puntos_u, puntos_v, puntos_pos = [], [], []
+    puntos_u, puntos_v, puntos_rh, puntos_pos = [], [], [], []
     transformer_to_utm = Transformer.from_crs("EPSG:4326", crs_raster, always_xy=True)
 
     for feature in data['features']:
         if "exception" in feature: continue
         try:
-            v_val = feature['properties']['days'][0]['variables'][0]['values'][0]
-            vel, direccion = v_val['moduleValue'], v_val['directionValue']
+            vel, direccion = 0.0, 0.0
+            humidade_local = 65.0 
+            
+            for var in feature['properties']['days'][0]['variables']:
+                if var['name'] == 'wind':
+                    vel = var['values'][0]['moduleValue']
+                    direccion = var['values'][0]['directionValue']
+                elif var['name'] == 'relative_humidity':
+                    humidade_local = var['values'][0]['value']
+            
             lon_wgs, lat_wgs = feature['geometry']['coordinates']
             x_utm, y_utm = transformer_to_utm.transform(lon_wgs, lat_wgs)
             rad = np.radians((direccion + 180) % 360)
             puntos_u.append(vel * np.sin(rad))
             puntos_v.append(vel * np.cos(rad))
+            puntos_rh.append(humidade_local)
             puntos_pos.append((x_utm, y_utm))
         except: 
             continue
     
-    return (np.array(puntos_pos), puntos_u, puntos_v), None
+    humidade_media = np.mean(puntos_rh) if puntos_rh else 65.0
+    
+    return (np.array(puntos_pos), puntos_u, puntos_v, humidade_media), None
